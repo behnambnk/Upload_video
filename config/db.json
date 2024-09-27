@@ -1,0 +1,8 @@
+{
+    "username": "myuser",
+    "password": "mypassword",
+    "database": "your_db_name",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "port": 5432
+}

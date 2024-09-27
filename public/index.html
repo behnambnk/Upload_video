@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-ui/4.11.0/styles/material-ui.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Sign Up</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0e0e0;
+        }
+
+        /* Navbar Styling */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 10px 20px;
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 24px;
+        }
+
+        .navbar button {
+            color: white;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 15px;
+        }
+
+        .navbar button:hover {
+            color: #ff9800;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>MyApp</h1>
+        <div>
+            <button>Home</button>
+            <button>Login</button>
+            <button>Sign Up</button>
+        </div>
+    </div>
+
+    <h2>Sign Up</h2>
+    <form id="signupForm">
+        <label for="signupUsername">Username:</label>
+        <input type="text" id="signupUsername" name="username" required>
+
+        <label for="signupPassword">Password:</label>
+        <input type="password" id="signupPassword" name="password" required>
+
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <h2>Upload Video</h2>
+    <form id="uploadForm" class="hidden">
+        <label for="file">Choose Video File:</label>
+        <input type="file" id="file" name="file" accept="video/*" required>
+
+        <button type="submit">Upload & Transcode</button>
+    </form>
+
+    <script>
+        const signupUrl = 'http://localhost:3000/signup';
+        const loginUrl = 'http://localhost:3000/login';
+        const transcodeUrl = 'http://localhost:3000/transcode';
+
+        let token = '';
+
+        // Signup Form Handler
+        document.getElementById('signupForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const response = await axios.post(signupUrl, {
+                    username: username,
+                    password: password
+                });
+
+                alert('Sign up successful! Please login.');
+            } catch (error) {
+                console.error('Error signing up:', error);
+                alert('Sign up failed. Please try again.');
+            }
+        });
+
+        // Login Form Handler
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await axios.post(loginUrl, {
+                    username: username,
+                    password: password
+                });
+
+                token = response.data.token;
+                alert('Login successful!');
+
+                // Show the upload form and hide the login form
+                document.getElementById('uploadForm').classList.remove('hidden');
+                document.getElementById('loginForm').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error logging in:', error);
+                alert('Login failed. Please check your credentials.');
+            }
+        });
+
+        // Upload Form Handler
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a video file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await axios.post(transcodeUrl, {
+                    fileName: file.name
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                alert('Video uploaded and transcoded successfully!');
+
+            } catch (error) {
+                console.error('Error in uploading or transcoding:', error);
+                alert('Upload or transcoding failed.');
+            }
+        });
+    </script>
+
+</body>
+
+</html>
