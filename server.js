@@ -8,7 +8,14 @@ const fs = require('fs');
 require('dotenv').config();
 const AWS = require('aws-sdk');
 
-AWS.config.update({ region: 'ap-southeast-2' });
+console.log(process.env.AWS_ACCESS_KEY_ID);
+AWS.config.update({ 
+  region: 'ap-southeast-2',
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN
+});
+
 
 const cognito = new AWS.CognitoIdentityServiceProvider();
 
@@ -25,15 +32,6 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
-
-function isAuthenticated(req, res, next) {
-  console.log(req.session);
-  if (req.session.isAuthenticated) {
-    next();
-  } else {
-    res.redirect('/login');
-  }
-}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -118,7 +116,6 @@ app.post('/login', (req, res) => {
 
 // Route: GET Upload Page (Only if logged in)
 app.get('/upload', (req, res) => {
-  console.log(req.session)
   if (req.session.isAuthenticated) {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));
   } else {
@@ -128,12 +125,33 @@ app.get('/upload', (req, res) => {
 
 // Route: POST Upload Video
 app.post('/upload', upload.single('video'), (req, res) => {
-  if (!req.session.user) {
+  if (!req.session.isAuthenticated) {
     return res.status(403).send('You must be logged in to upload videos.');
   }
   
+  const s3 = new AWS.S3();
+
   // File is saved in 'uploads/' directory
-  res.send('Video uploaded successfully: ' + req.file.filename);
+  const file = req.file;
+  const params = {
+    Bucket: 'n11404329-video-converter',
+    Key: file.filename,
+    Body: fs.createReadStream(file.path),
+    ACL: 'public-read'
+  };
+
+  s3.upload(params, (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error uploading video.');
+    }
+
+      // Delete the local file after uploading to S3
+    fs.unlinkSync(file.path);
+
+    const videoUrl = data.Location;
+    res.send('Video uploaded successfully: ' + videoUrl);
+  });
 });
 
 // Route: Logout
