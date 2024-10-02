@@ -5,6 +5,13 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const fs = require('fs');
+require('dotenv').config();
+const AWS = require('aws-sdk');
+
+AWS.config.update({ region: 'ap-southeast-2' });
+
+const cognito = new AWS.CognitoIdentityServiceProvider();
+
 
 // Initialize app
 const app = express();
@@ -12,14 +19,21 @@ const app = express();
 // Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(session({
   secret: 'secret-key',
   resave: false,
   saveUninitialized: false
 }));
 
-// Simulated database for storing users (in-memory for simplicity)
-let users = [];
+function isAuthenticated(req, res, next) {
+  console.log(req.session);
+  if (req.session.isAuthenticated) {
+    next();
+  } else {
+    res.redirect('/login');
+  }
+}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -41,13 +55,33 @@ app.get('/signup', (req, res) => {
 
 // Route: POST Signup
 app.post('/signup', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, email, name } = req.body;
+  console.log(name);
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  users.push({ username, password: hashedPassword });
-  
-  req.session.user = username; // Automatically log the user in
-  res.redirect('/upload');
+  const params = {
+      ClientId: process.env.COGNITO_CLIENT_ID, 
+      Username: username,
+      Password: password,
+      UserAttributes: [
+          {
+              Name: 'email',
+              Value: email
+          },
+          {
+            Name: 'name',
+            Value: name
+          }
+      ]
+  };
+
+  cognito.signUp(params, (err, data) => {
+      if (err) {
+          return res.status(400).json({ success: false, message: err.message });
+      }
+    req.session.username = username;
+    req.session.isAuthenticated = true;
+    res.redirect('/upload');
+  });
 });
 
 // Route: GET Login Page
@@ -56,21 +90,36 @@ app.get('/login', (req, res) => {
 });
 
 // Route: POST Login
-app.post('/login', async (req, res) => {
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  
-  const user = users.find(u => u.username === username);
-  if (user && await bcrypt.compare(password, user.password)) {
-    req.session.user = username;  // Create session
+
+  const params = {
+    AuthFlow: 'USER_PASSWORD_AUTH',
+    ClientId: process.env.COGNITO_CLIENT_ID,
+    AuthParameters: {
+      USERNAME: username,
+      PASSWORD: password,
+    },
+  };
+
+
+  cognito.initiateAuth(params, (err, data) => {
+    if (err) {
+      if (err) {
+        return res.status(401).send('Invalid username or password');
+      }
+    }
+    req.session.username = username;
+    req.session.isAuthenticated = true;
     res.redirect('/upload');
-  } else {
-    res.send('Invalid username or password.');
-  }
+    console.log(req.session);  
+  });
 });
 
 // Route: GET Upload Page (Only if logged in)
 app.get('/upload', (req, res) => {
-  if (req.session.user) {
+  console.log(req.session)
+  if (req.session.isAuthenticated) {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));
   } else {
     res.redirect('/login');  // Redirect to login if not logged in
