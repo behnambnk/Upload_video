@@ -7,7 +7,8 @@ const session = require('express-session');
 const fs = require('fs');
 require('dotenv').config();
 const AWS = require('aws-sdk');
-
+const User  = require('./models/User');
+const ffmpeg = require('fluent-ffmpeg');
 // AWS Cognito Configuration
 AWS.config.update({ 
   region: 'ap-southeast-2',
@@ -48,7 +49,7 @@ const upload = multer({ storage: storage });
 // Routes
 
 // Signup Route
-app.get('/signup', (req, res) => {
+app.get('/signup', async (req, res) => { 
   res.sendFile(path.join(__dirname, 'public', 'signup.html')); // Serve signup HTML page
 });
 
@@ -63,8 +64,16 @@ app.post('/signup', (req, res) => {
       { Name: 'name', Value: name },
     ],
   };
-  cognito.signUp(params, (err, data) => {
+  cognito.signUp(params, async (err, data) => {
     if (err) return res.redirect(`/signup?error=${encodeURIComponent(err.message)}`);
+    console.log(data);
+
+    try {
+      const user = await User.create({ name, email, cognito_id: 'cid' });
+    } catch (error) {
+      return res.redirect(`/signup?error=${encodeURIComponent('there is error message')}`);
+    }
+
     req.session.username = username;
     req.session.isAuthenticated = true;
     res.redirect('/upload');
@@ -103,12 +112,45 @@ app.get('/upload', (req, res) => {
 });
 
 app.post('/upload', upload.single('video'), (req, res) => {
-  if (!req.file) return res.status(400).send('No file uploaded.');
+  if (!req.session.isAuthenticated) {
+    return res.status(403).send('You must be logged in to upload videos.');
+  }
+  
+  const s3 = new AWS.S3();
 
-  const videoUrl = `/uploads/${req.file.filename}`;
+  // File is saved in 'uploads/' directory
+  const file = req.file;
+  
+  // Convert video to mp4 using ffmpeg
+  const convertedFilePath = `./uploads/${Date.now()}.mp4`;
+  ffmpeg(file.path)
+    .output(convertedFilePath)
+    .on('end', () => {
+      // Upload the converted video to S3
+      const params = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: file.filename,
+        Body: fs.createReadStream(convertedFilePath),
+        ACL: 'public-read'
+      };
 
-  // Redirect to upload-success page with video link
-  res.redirect(`/upload-success?videoUrl=${encodeURIComponent(videoUrl)}`);
+      s3.upload(params, (err, data) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send('Error uploading video.');
+        }
+        // Delete the local files after uploading to S3
+        fs.unlinkSync(file.path);
+        fs.unlinkSync(convertedFilePath);
+        const videoUrl = data.Location;
+        res.redirect(`/upload-success?videoUrl=${encodeURIComponent(videoUrl)}`);
+      });
+    })
+    .on('error', (err) => {
+      console.error(err);
+      return res.status(500).send('Error converting video.');
+    })
+    .run();
 });
 
 // Success Route to Show the Video Link
