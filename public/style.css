@@ -1,0 +1,62 @@
+body {
+    font-family: "Roboto", sans-serif;
+    font-weight: 700;
+    font-style: normal;
+    background-image: linear-gradient(to right, #680c44, #511086, #0c6e8b);
+    color: #fff;
+    display: flex; justify-content: center; align-items: center; flex-direction: column; min-height: 100vh;
+    padding: 0; margin: 0;
+}
+
+
+
+.btn{
+    padding: 10px 25px 10px 25px; border: none; min-width: 200px; border-radius: 8px; background-color: #00c070;
+    cursor: pointer; box-shadow: 3px 3px 18px 2px #00746059; transition: 0.3s;
+    font-size: 16px;
+    font-family: "Roboto", sans-serif;
+    font-weight: 700;
+    font-style: normal; color: #fff;
+}
+.btn:hover{
+    box-shadow: none; transition: 0.3s; background-image: linear-gradient(to right, #00c070, #00b4ab);
+}
+
+form{
+    border: 3px solid #fff; border-radius: 18px; padding: 25px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background-color: #fff; box-shadow: 2px 2px 18px 1px #00000052; color: #00c070; border: 2px solid #00c070;
+}
+a{
+    color: #d0e60e; text-decoration: none;
+}
+
+.txt-box{
+    padding: 15px 25px 15px 25px; min-width: 350px; border-radius: 50px; border: 1px solid #00c070; margin: 25px; box-shadow: inset 0 0 8px 1px #00000034;
+}
+h1{
+    filter: drop-shadow(2px 3px 2px #cf0854);
+}
+.flex{
+    display: flex;
+}
+.align-center{
+    align-items: center;
+}
+.color-gray{
+    color: #325e4b;
+}
+.justify-content-center{
+    justify-content: center;
+}
+.flex-row{
+    flex-direction: row;
+}
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px) {
+  
+  .txt-box{
+    min-width: 220px; padding: 10px 15px 10px 15px;
+  }
+}

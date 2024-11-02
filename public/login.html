@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+
+  <script>
+    window.onload = function() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('error')) {
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = decodeURIComponent(params.get('error'));
+        errorMessage.style.display = 'block';
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Login</h1>
+
+  <!-- Error message div -->
+  <div id="error-message" style="color: red; display: none;"></div>
+
+  <form action="/login" method="POST">
+    <label for="username" class="flex align-center"><span class="material-symbols-outlined">person</span>&nbsp;Username:</label>
+    <input type="text" id="username" name="username" class="txt-box" required>
+    
+    <label for="password" class="flex align-center"><span class="material-symbols-outlined">password</span>&nbsp;Password:</label>
+    <input type="password" id="password" name="password" class="txt-box" required>
+    
+    <button type="submit" class="btn flex align-center justify-content-center"><span class="material-symbols-outlined">chevron_right</span>&nbsp;Login</button>
+  </form>
+  
+  <br>
+  <p class="flex flex-row">Don't have an account?&nbsp;&nbsp;&nbsp;&nbsp; <a href="/signup" class="flex align-center"><span class="material-symbols-outlined">login</span>&nbsp;&nbsp;Signup here</a></p>
+</body>
+</html>

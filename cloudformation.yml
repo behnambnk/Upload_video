@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyECSCluster:
+    Type: AWS::ECS::Cluster
+    Name: n11404329-video-uploader-cluster
+
+
+  MyTaskDefinition1:
+    Type: AWS::ECS::TaskDefinition
+    Name: n11404329-video-uploader-api
+
+  MyTaskDefinition2:
+    Type: AWS::ECS::TaskDefinition
+
+  MyService1:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref MyECSCluster
+      TaskDefinition: !Ref MyTaskDefinition1
+      DesiredCount: 1
+
+  MyService2:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref MyECSCluster
+      TaskDefinition: !Ref MyTaskDefinition2
+      DesiredCount: 1
+
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyLoadBalancer
+      Subnets:
+        - subnet-12345678
+      SecurityGroups:
+        - sg-12345678
+      Type: application
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
